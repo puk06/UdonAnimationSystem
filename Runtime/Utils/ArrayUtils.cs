@@ -1,0 +1,185 @@
+﻿using net.puk06.UdonAnimation.Models;
+using UdonSharp;
+using UnityEngine;
+
+namespace net.puk06.UdonAnimation.Utils
+{
+    public static class ArrayUtils
+    {
+        public static void InitializeValues(float[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = float.PositiveInfinity;
+            }
+        }
+
+        public static void InitializeValues(int[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = -1;
+            }
+        }
+
+        public static void InitializeValues(Vector3[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = Vector3.positiveInfinity;
+            }
+        }
+
+        public static void InitializeValues(Color[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = ColorUtils.GetInvalidColor();
+            }
+        }
+
+        public static int AssignArrayValue<T>(T[] array, T value)
+        {
+            if (array == null || value == null) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == null)
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+
+        public static int AssignArrayValue(float[] array, float value)
+        {
+            if (array == null || value == float.PositiveInfinity) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == float.PositiveInfinity)
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+
+        public static int AssignArrayValue(int[] array, int value)
+        {
+            if (array == null || value == -1) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == -1)
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+
+        public static int AssignArrayValue(Vector3[] array, Vector3 value)
+        {
+            if (array == null || MathUtils.IsPositiveInfinity(value)) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (MathUtils.IsPositiveInfinity(array[i]))
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+
+        public static int AssignArrayValue(Color[] array, Color value)
+        {
+            if (array == null || ColorUtils.IsInvalidColor(value)) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (ColorUtils.IsInvalidColor(array[i]))
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+
+        public static int AssignArrayValue(TransitionType[] array, TransitionType value)
+        {
+            if (array == null || value == TransitionType.None) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == TransitionType.None)
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+
+        public static int AssignArrayValue(AnimationMode[] array, AnimationMode value)
+        {
+            if (array == null || value == AnimationMode.None) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == AnimationMode.None)
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+
+        public static int AssignArrayValue(ElementType[] array, ElementType value)
+        {
+            if (array == null || value == ElementType.None) return -1;
+            
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == ElementType.None)
+                {
+                    array[i] = value;
+                    return i;
+                }
+
+                continue;
+            }
+
+            return -1;
+        }
+    }
+}
