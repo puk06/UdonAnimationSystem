@@ -1,5 +1,3 @@
-using UdonSharp;
-
 namespace net.puk06.UdonAnimation.Utils
 {
     public static class TypeUtils

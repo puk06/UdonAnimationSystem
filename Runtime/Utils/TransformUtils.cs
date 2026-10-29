@@ -1,4 +1,3 @@
-using UdonSharp;
 using UnityEngine;
 
 namespace net.puk06.UdonAnimation.Utils

@@ -1,6 +1,5 @@
 using net.puk06.UdonAnimation.Models;
 using TMPro;
-using UdonSharp;
 using UnityEngine;
 using UnityEngine.UI;
 

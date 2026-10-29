@@ -1,5 +1,4 @@
 ﻿using net.puk06.UdonAnimation.Models;
-using UdonSharp;
 using UnityEngine;
 
 namespace net.puk06.UdonAnimation.Utils
