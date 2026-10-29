@@ -873,6 +873,101 @@ namespace net.puk06.UdonAnimation
         }
         #endregion
 
+        #region Toggle
+        /// <summary>
+        /// Enables or disables the provided GameObject after the specified delay.
+        /// The state change itself is instantaneous; use <paramref name="after"/> to schedule it,
+        /// or combine it with other animations to run them in sequence.
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="active">True to activate the GameObject, false to deactivate it.</param>
+        /// <param name="after">The number of seconds to wait before applying the state.</param>
+        /// <returns></returns>
+        public UdonAnimationSystem Toggle(GameObject element, bool active, float after = 0f)
+            => ToggleInternal(element, active, after);
+
+        /// <summary>
+        /// Enables or disables the provided GameObjects after the specified delay.
+        /// </summary>
+        /// <param name="elements"></param>
+        /// <param name="active">True to activate the GameObjects, false to deactivate them.</param>
+        /// <param name="after">The number of seconds to wait before applying the state.</param>
+        /// <returns></returns>
+        public UdonAnimationSystem Toggle(GameObject[] elements, bool active, float after = 0f)
+        {
+            foreach (GameObject element in elements)
+            {
+                Toggle(element, active, after);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Activates the provided GameObject after the specified delay.
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
+        public UdonAnimationSystem Activate(GameObject element, float after = 0f)
+            => ToggleInternal(element, true, after);
+
+        /// <summary>
+        /// Activates the provided GameObjects after the specified delay.
+        /// </summary>
+        /// <param name="elements"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
+        public UdonAnimationSystem Activate(GameObject[] elements, float after = 0f)
+        {
+            foreach (GameObject element in elements)
+            {
+                Activate(element, after);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Deactivates the provided GameObject after the specified delay.
+        /// </summary>
+        /// <param name="element"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
+        public UdonAnimationSystem Deactivate(GameObject element, float after = 0f)
+            => ToggleInternal(element, false, after);
+
+        /// <summary>
+        /// Deactivates the provided GameObjects after the specified delay.
+        /// </summary>
+        /// <param name="elements"></param>
+        /// <param name="after"></param>
+        /// <returns></returns>
+        public UdonAnimationSystem Deactivate(GameObject[] elements, float after = 0f)
+        {
+            foreach (GameObject element in elements)
+            {
+                Deactivate(element, after);
+            }
+
+            return this;
+        }
+
+        private UdonAnimationSystem ToggleInternal(GameObject element, bool active, float after)
+        {
+            if (element == null)
+            {
+                Debug.LogError($"{LogPrefix} Element is null. Processing was skipped.");
+                return this;
+            }
+
+            AnimationMode animationMode = active ? AnimationMode.ToggleOn : AnimationMode.ToggleOff;
+
+            AddTask(TransformUtils.ToComponent(element), 0f, after, float.PositiveInfinity, TransitionType.None, animationMode, ElementType.None, Vector3.positiveInfinity, Vector3.positiveInfinity, Vector3.positiveInfinity, ColorUtils.GetInvalidColor(), Vector3.positiveInfinity, Vector3.positiveInfinity, Vector3.positiveInfinity, ColorUtils.GetInvalidColor(), true, true, true, true);
+            return this;
+        }
+        #endregion
+
         #region Save & Define & Reset Transform
         /// <summary>
         /// The specified type of Transform for the Element is saved in advance. If it exists, it is used as the initial Transform for this Element. It will not be removed unless RemoveDefine is called. Overwriting is possible.
@@ -2174,6 +2269,16 @@ namespace net.puk06.UdonAnimation
 
                             TransformUtils.SetRotation(targetObj, newEulerAngles);
                         }
+                        break;
+                    }
+                case AnimationMode.ToggleOn:
+                    {
+                        targetObj.gameObject.SetActive(true);
+                        break;
+                    }
+                case AnimationMode.ToggleOff:
+                    {
+                        targetObj.gameObject.SetActive(false);
                         break;
                     }
             }

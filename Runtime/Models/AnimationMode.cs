@@ -31,6 +31,9 @@ namespace net.puk06.UdonAnimation.Models
         
         FlipX,
         FlipY,
-        FlipZ
+        FlipZ,
+
+        ToggleOn,
+        ToggleOff
     }
 }
