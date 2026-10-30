@@ -93,6 +93,11 @@ namespace net.puk06.UdonAnimation
         private Color[] m_definedColors;
         #endregion
 
+        #region Custom Receiver Data Fields
+        private UdonAnimationCallbackReceiver[] m_customReceivers;
+        private string[] m_customReceiverIdentifiers;
+        #endregion
+
         private bool _initialized = false;
         public bool Initialized => _initialized;
 
@@ -135,6 +140,9 @@ namespace net.puk06.UdonAnimation
             m_definedScales = new Vector3[maxConcurrentAnimations];
             m_definedRotations = new Vector3[maxConcurrentAnimations];
             m_definedColors = new Color[maxConcurrentAnimations];
+
+            m_customReceivers = new UdonAnimationCallbackReceiver[maxConcurrentAnimations];
+            m_customReceiverIdentifiers = new string[maxConcurrentAnimations];
 
             ArrayUtils.InitializeValues(m_durations);
             ArrayUtils.InitializeValues(m_offsets);
@@ -1846,8 +1854,68 @@ namespace net.puk06.UdonAnimation
             => IsRegisteredInDefineDatabase(TransformUtils.ToComponent(element));
         #endregion
 
+        #region Custom Receiver
+        /// <summary>
+        /// Plays a custom receiver animation. The receiver is called with the eased progress (0 to 1) while the animation is running, and once when it completes.
+        /// </summary>
+        /// <param name="customReceiver">The custom receiver to notify.</param>
+        /// <param name="duration">The duration of the animation.</param>
+        /// <param name="after">The time after which the animation should start.</param>
+        /// <param name="transitionType">The type of transition to use for the animation.</param>
+        /// <param name="identifier">An optional identifier passed back to the custom receiver.</param>
+        /// <returns>The current instance of UdonAnimationSystem for method chaining.</returns>
+        public UdonAnimationSystem SetCustomReceiver(UdonAnimationCallbackReceiver customReceiver, float duration, float after, TransitionType transitionType, string identifier = "")
+        {
+            if (!_initialized) Initialize();
+
+            if (customReceiver == null)
+            {
+                Debug.LogError($"{LogPrefix} Custom Receiver is null. Processing was skipped.");
+                return this;
+            }
+
+            int taskIndex = AddTask(
+                customReceiver,
+                duration, after,
+                0f,
+                transitionType,
+                AnimationMode.None,
+                ElementType.None,
+                Vector3.positiveInfinity, Vector3.positiveInfinity, Vector3.positiveInfinity, ColorUtils.GetInvalidColor(),
+                Vector3.positiveInfinity, Vector3.positiveInfinity, Vector3.positiveInfinity, ColorUtils.GetInvalidColor(),
+                false, false, false, false
+            );
+
+            if (taskIndex == -1) return this;
+
+            m_customReceivers[taskIndex] = customReceiver;
+            m_customReceiverIdentifiers[taskIndex] = string.IsNullOrEmpty(identifier) ? "" : identifier;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Plays a custom receiver animation for the provided custom receivers.
+        /// </summary>
+        /// <param name="customReceivers">The custom receivers to notify.</param>
+        /// <param name="duration">The duration of the animation.</param>
+        /// <param name="after">The time after which the animation should start.</param>
+        /// <param name="transitionType">The type of transition to use for the animation.</param>
+        /// <param name="identifier">An optional identifier passed back to the custom receivers.</param>
+        /// <returns>The current instance of UdonAnimationSystem for method chaining.</returns>
+        public UdonAnimationSystem SetCustomReceiver(UdonAnimationCallbackReceiver[] customReceivers, float duration, float after, TransitionType transitionType, string identifier = "")
+        {
+            foreach (UdonAnimationCallbackReceiver customReceiver in customReceivers)
+            {
+                SetCustomReceiver(customReceiver, duration, after, transitionType, identifier);
+            }
+
+            return this;
+        }
+        #endregion
+
         #region Task Management
-        private void AddTask(
+        private int AddTask(
             Component element,
             float time, float after,
             float offset,
@@ -1864,7 +1932,15 @@ namespace net.puk06.UdonAnimation
             if (element == null)
             {
                 Debug.LogError($"{LogPrefix} Task creation was canceled because element is null.");
-                return;
+                return -1;
+            }
+
+            int taskIndex = ArrayUtils.FindFreeIndex(m_currentTasks);
+
+            if (taskIndex == -1)
+            {
+                Debug.LogError($"{LogPrefix} Failed to create Animation Task. You have likely exceeded the maximum number of simultaneous animations.");
+                return -1;
             }
 
             int objectIndex = ArrayUtils.AssignArrayValue(m_targetObjects, element);
@@ -1888,14 +1964,18 @@ namespace net.puk06.UdonAnimation
             int targetColorIndex = ArrayUtils.AssignArrayValue(m_targetColors, targetColor);
 
             string stats = $"{objectIndex},,,{durationIndex},,,{startTimeIndex},,,{offsetIndex},,,{timeoutTimesIndex},,,{startPositionIndex},,,{startRotationIndex},,,{startScaleIndex},,,{startColorIndex},,,{transitionTypeIndex},,,{modesIndex},,,{elementTypeIndex},,,{targetPositionIndex},,,{targetRotationIndex},,,{targetScaleIndex},,,{targetColorIndex},,,{TypeUtils.BoolToInt(useDefinedPosition)},,,{TypeUtils.BoolToInt(useDefinedRotation)},,,{TypeUtils.BoolToInt(useDefinedScale)},,,{TypeUtils.BoolToInt(useDefinedColor)}";
-            int statsIndex = ArrayUtils.AssignArrayValue(m_currentTasks, stats);
+            m_currentTasks[taskIndex] = stats;
 
-            if (statsIndex == -1) Debug.LogError($"{LogPrefix} Failed to create Animation Task. You have likely exceeded the maximum number of simultaneous animations.");
-            else Debug.Log($"{LogPrefix} Animation Task Created - Object: {element.name} - Task: {statsIndex}");
+            Debug.Log($"{LogPrefix} Animation Task Created - Object: {element.name} - Task: {taskIndex}");
+            return taskIndex;
         }
 
         private void RemoveTask(string[] parsedTaskDataString, int taskIndex)
         {
+            m_currentTasks[taskIndex] = null;
+            m_customReceivers[taskIndex] = null;
+            m_customReceiverIdentifiers[taskIndex] = null;
+
             int objectIndex = int.Parse(parsedTaskDataString[OBJECT_INDEX]);
             if (objectIndex == -1) return;
 
@@ -1919,8 +1999,6 @@ namespace net.puk06.UdonAnimation
             if (int.Parse(parsedTaskDataString[TARGET_ROTATION_INDEX]) != -1) m_targetRotations[int.Parse(parsedTaskDataString[TARGET_ROTATION_INDEX])] = Vector3.positiveInfinity;
             if (int.Parse(parsedTaskDataString[TARGET_SCALE_INDEX]) != -1) m_targetScales[int.Parse(parsedTaskDataString[TARGET_SCALE_INDEX])] = Vector3.positiveInfinity;
             if (int.Parse(parsedTaskDataString[TARGET_COLOR_INDEX]) != -1) m_targetColors[int.Parse(parsedTaskDataString[TARGET_COLOR_INDEX])] = ColorUtils.GetInvalidColor();
-
-            m_currentTasks[taskIndex] = null;
         }
         #endregion
 
@@ -1942,6 +2020,35 @@ namespace net.puk06.UdonAnimation
 
                 Component targetObj = m_targetObjects[objectIndex];
                 if (targetObj == null) continue;
+
+                // Custom receivers only need the eased progress, so handle them before
+                // resolving the start values (which would read Transforms and consume pooled slots).
+                UdonAnimationCallbackReceiver customReceiver = m_customReceivers[i];
+                if (customReceiver != null)
+                {
+                    float receiverDuration = GetFloatValue(parsedStrData, DURATION_INDEX, m_durations, 0f);
+                    float receiverStartTime = GetFloatValue(parsedStrData, START_TIME_INDEX, m_startTimes, 0f);
+                    float receiverTimeoutTime = GetFloatValue(parsedStrData, TIME_OUT_INDEX, m_timeoutTimes, 0f);
+
+                    if ((Time.time - (receiverStartTime + receiverTimeoutTime)) <= 0f) continue;
+
+                    float receiverT = 1f;
+                    if (receiverDuration > 0f) receiverT = UdonUtils.Clamp((Time.time - (receiverStartTime + receiverTimeoutTime)) / receiverDuration, 0f, 1f);
+
+                    float receiverEased = MathUtils.ApplyEasing(receiverT, GetTransitionTypeValue(parsedStrData, TRANSITION_TYPE_INDEX));
+                    string customReceiverIdentifier = m_customReceiverIdentifiers[i];
+
+                    customReceiver.OnAnimationUpdate(customReceiverIdentifier, receiverEased);
+
+                    if (receiverT >= 1f)
+                    {
+                        customReceiver.OnAnimationComplete(customReceiverIdentifier);
+                        Debug.Log($"{LogPrefix} Animation Finished - Object: {targetObj.name} - Task: {i}");
+                        RemoveTask(parsedStrData, i);
+                    }
+
+                    continue;
+                }
 
                 float duration = GetFloatValue(parsedStrData, DURATION_INDEX, m_durations, 0f);
                 float startTime = GetFloatValue(parsedStrData, START_TIME_INDEX, m_startTimes, 0f);

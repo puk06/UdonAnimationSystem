@@ -37,6 +37,18 @@ namespace net.puk06.UdonAnimation.Utils
             }
         }
 
+        public static int FindFreeIndex(string[] array)
+        {
+            if (array == null) return -1;
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == null) return i;
+            }
+
+            return -1;
+        }
+
         public static int AssignArrayValue<T>(T[] array, T value)
         {
             if (array == null || value == null) return -1;

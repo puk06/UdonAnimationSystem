@@ -12,10 +12,45 @@ Animate Unity Canvas UI and 3D GameObjects with the same API.
 - Works with any `Component` or `GameObject` — Canvas UI, 3D objects, and everything with a `Transform`
 - Position, rotation, scale, flip, fade, and color animations
 - GameObject activation toggles (`Toggle` / `Activate` / `Deactivate`), also schedulable with `after`
+- Custom callback receivers (`SetCustomReceiver`) that receive eased progress while an animation runs
 - Sequential and delayed animations with easing
 - Save / define / reset initial states for smooth transitions
 - Fixed-capacity pooled arrays + string task storage: low allocation and stable on Udon
 - Works with **UdonSharp** and VRChat Worlds
+
+---
+
+## 🎛 Custom Receiver
+
+`SetCustomReceiver` drives any UdonSharp behaviour with the same timing and easing pipeline as the built-in animations.
+
+Inherit from `UdonAnimationCallbackReceiver`:
+
+```csharp
+using net.puk06.UdonAnimation;
+using UdonSharp;
+
+public class MyReceiver : UdonAnimationCallbackReceiver
+{
+    public override void OnAnimationUpdate(string identifier, float eased)
+    {
+        // Called every frame. eased is 0 -> 1 with the selected TransitionType applied.
+    }
+
+    public override void OnAnimationComplete(string identifier)
+    {
+        // Called once when the animation finishes.
+    }
+}
+```
+
+Then pass it to the animation system:
+
+```csharp
+using net.puk06.UdonAnimation.Models;
+
+animationSystem.SetCustomReceiver(receiver, 1f, 0f, TransitionType.EaseOut, "open");
+```
 
 ---
 
