@@ -2011,15 +2011,27 @@ namespace net.puk06.UdonAnimation
             for (int i = 0; i < m_currentTasks.Length; i++)
             {
                 if (m_currentTasks[i] == null || m_currentTasks[i] == "") continue;
-                currentWorkingTasks++;
 
                 string[] parsedStrData = UdonUtils.ParseDataString(m_currentTasks[i]);
 
                 int objectIndex = int.Parse(parsedStrData[OBJECT_INDEX]);
-                if (objectIndex == -1) continue;
+                if (objectIndex == -1)
+                {
+                    // The task was created without a target object (e.g. the object pool was full).
+                    RemoveTask(parsedStrData, i);
+                    continue;
+                }
 
                 Component targetObj = m_targetObjects[objectIndex];
-                if (targetObj == null) continue;
+                if (targetObj == null)
+                {
+                    // The target was destroyed while the animation was running. Release the task instead of keeping it forever.
+                    Debug.Log($"{LogPrefix} Animation Canceled - Target object is null - Task: {i}");
+                    RemoveTask(parsedStrData, i);
+                    continue;
+                }
+
+                currentWorkingTasks++;
 
                 // Custom receivers only need the eased progress, so handle them before
                 // resolving the start values (which would read Transforms and consume pooled slots).
